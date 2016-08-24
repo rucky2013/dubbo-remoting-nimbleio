@@ -17,7 +17,6 @@ package com.alibaba.dubbo.remoting.transport.nimbleio;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.HashSet;
 
 import com.alibaba.dubbo.common.URL;
 import com.alibaba.dubbo.common.logger.Logger;
@@ -31,6 +30,7 @@ import com.alibaba.dubbo.remoting.transport.dispatcher.ChannelHandlers;
 import com.gifisan.nio.acceptor.TCPAcceptor;
 import com.gifisan.nio.component.DefaultNIOContext;
 import com.gifisan.nio.component.NIOContext;
+import com.gifisan.nio.component.SessionMEvent;
 import com.gifisan.nio.extend.configuration.ServerConfiguration;
 
 /**
@@ -41,72 +41,60 @@ import com.gifisan.nio.extend.configuration.ServerConfiguration;
  * @author ding.lid
  */
 public class NimbleIOServer extends AbstractServer {
-    
-    private static final Logger logger = LoggerFactory.getLogger(NimbleIOServer.class);
 
-    private TCPAcceptor acceptor;
+	private static final Logger	logger	= LoggerFactory.getLogger(NimbleIOServer.class);
 
-    public NimbleIOServer(URL url, ChannelHandler handler) throws RemotingException{
-        super(url, ChannelHandlers.wrap(handler, ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME)));
-    }
+	private TCPAcceptor			acceptor;
 
-    @Override
-    protected void doOpen() throws Throwable {
-        // set thread pool.
-    	NIOContext context = new DefaultNIOContext();
-        acceptor = new TCPAcceptor();
-        acceptor.setContext(context);
+	public NimbleIOServer(URL url, ChannelHandler handler) throws RemotingException {
+		super(url, ChannelHandlers.wrap(handler, ExecutorUtil.setThreadName(url, SERVER_THREAD_POOL_NAME)));
+	}
+
+	@Override
+	protected void doOpen() throws Throwable {
+		// set thread pool.
+		NIOContext context = new DefaultNIOContext();
+		acceptor = new TCPAcceptor();
+		acceptor.setContext(context);
 
 		ServerConfiguration cfg = new ServerConfiguration();
-		
+
 		cfg.setSERVER_TCP_PORT(getBindAddress().getPort());
 
 		context.setServerConfiguration(cfg);
-		
-		context.setProtocolFactory(new NimbleIOCodecAdapter(getCodec(),
-				getUrl(), this));
-		
-		context.setIOEventHandleAdaptor(new NimbleIOHandler(getCodec(),getUrl(), this));
-		
-        acceptor.bind();
-    }
 
-    @Override
-    protected void doClose() throws Throwable {
-        try {
-            if (acceptor != null) {
-                acceptor.unbind();
-            }
-        } catch (Throwable e) {
-            logger.warn(e.getMessage(), e);
-        }
-    }
+		context.setProtocolFactory(new NimbleIOCodecAdapter(getCodec(), getUrl(), this));
 
-    public Collection<Channel> getChannels() {
-//        Set<Session> sessions = acceptor.getManagedSessions(getBindAddress());
-        Collection<Channel> channels = new HashSet<Channel>();
-//        for (Session session : sessions) {
-//            if (session.isConnected()) {
-//                channels.add(MinaChannel.getOrAddChannel(session, getUrl(), this));
-//            }
-//        }
-        logger.error(new Exception());
-        return channels;
-    }
+		context.setIOEventHandleAdaptor(new NimbleIOHandler(getCodec(), getUrl(), this));
 
-    public Channel getChannel(InetSocketAddress remoteAddress) {
-//        Set<Session> sessions = acceptor.getManagedSessions(getBindAddress());
-//        for (Session session : sessions) {
-//            if (session.getRemoteAddress().equals(remoteAddress)) {
-//                return MinaChannel.getOrAddChannel(session, getUrl(), this);
-//            }
-//        }
-    	logger.error(new Exception());
-        return null;
-    }
+		acceptor.bind();
+	}
 
-    public boolean isBound() {
-        return true;
-    }
+	@Override
+	protected void doClose() throws Throwable {
+		try {
+			if (acceptor != null) {
+				acceptor.unbind();
+			}
+		} catch (Throwable e) {
+			logger.warn(e.getMessage(), e);
+		}
+	}
+
+	public Collection<Channel> getChannels() {
+		throw new UnsupportedOperationException("use triggerEvent instead");
+	}
+
+	public Channel getChannel(InetSocketAddress remoteAddress) {
+		throw new UnsupportedOperationException("use a other way");
+	}
+
+	public boolean isBound() {
+		throw new UnsupportedOperationException("use a other way");
+	}
+	
+	public void triggerEvent(SessionMEvent event){
+		acceptor.offerSessionMEvent(event);
+	}
 
 }

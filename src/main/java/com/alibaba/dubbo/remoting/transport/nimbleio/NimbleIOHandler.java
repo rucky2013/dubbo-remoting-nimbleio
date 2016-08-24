@@ -30,54 +30,50 @@ import com.gifisan.nio.component.protocol.future.ReadFuture;
  */
 public class NimbleIOHandler extends IOEventHandleAdaptor {
 
-    private final URL url;
-    
-    private final ChannelHandler handler;
-    
-    private final Codec2 codec;
-    
-    public NimbleIOHandler(Codec2 codec,URL url, ChannelHandler handler) {
-        if (url == null) {
-            throw new IllegalArgumentException("url == null");
-        }
-        if (handler == null) {
-            throw new IllegalArgumentException("handler == null");
-        }
-        if (codec == null) {
-            throw new IllegalArgumentException("codec == null");
-        }
-        this.url = url;
-        this.handler = handler;
-        this.codec = codec;
-    }
+	private final URL			url;
+
+	private final ChannelHandler	handler;
+
+	private final Codec2		codec;
+
+	public NimbleIOHandler(Codec2 codec, URL url, ChannelHandler handler) {
+		if (url == null) {
+			throw new IllegalArgumentException("url == null");
+		}
+		if (handler == null) {
+			throw new IllegalArgumentException("handler == null");
+		}
+		if (codec == null) {
+			throw new IllegalArgumentException("codec == null");
+		}
+		this.url = url;
+		this.handler = handler;
+		this.codec = codec;
+	}
 
 	@Override
-	public void acceptAlong(Session session, ReadFuture future)
-			throws Exception {
-		NimbleioChannel channel = NimbleioChannel.getOrAddChannel(session,codec, url, handler);
-		
+	public void acceptAlong(Session session, ReadFuture future) throws Exception {
+		NimbleioChannel channel = NimbleioChannel.getOrAddChannel(session, codec, url, handler);
+
 		DubboReadFuture f = (DubboReadFuture) future;
-		
+
 		handler.received(channel, f.getMsg());
 	}
 
-	public void exceptionCaught(Session session, ReadFuture future,
-			Exception cause, IOEventState state) {
+	public void exceptionCaught(Session session, ReadFuture future, Exception cause, IOEventState state) {
 		super.exceptionCaught(session, future, cause, state);
 	}
 
 	public void futureSent(Session session, ReadFuture future) {
-		NimbleioChannel channel = NimbleioChannel.getOrAddChannel(session,codec, url, handler);
-		
+		NimbleioChannel channel = NimbleioChannel.getOrAddChannel(session, codec, url, handler);
+
 		DubboReadFuture f = (DubboReadFuture) future;
-		
+
 		try {
 			handler.sent(channel, f.getWriteBuffer());
 		} catch (RemotingException e) {
 			e.printStackTrace();
 		}
 	}
-
-   
 
 }

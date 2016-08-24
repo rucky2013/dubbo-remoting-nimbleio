@@ -12,26 +12,21 @@ import com.gifisan.nio.component.Session;
 
 public class NimbleioChannel extends AbstractChannel {
 
-	private static final String CHANNEL_KEY = NimbleioChannel.class.getName()
-			+ ".CHANNEL";
-	
-	private Codec2 codec;
+	private static final String	CHANNEL_KEY	= NimbleioChannel.class.getName() + ".CHANNEL";
+
+	private Codec2				codec;
 
 	public NimbleioChannel(Session session, Codec2 codec, URL url, ChannelHandler handler) {
 		super(url, handler);
 		this.session = session;
 		this.codec = codec;
 	}
-	
-	
 
-	static NimbleioChannel getOrAddChannel(Session session, Codec2 codec,URL url,
-			ChannelHandler handler) {
+	static NimbleioChannel getOrAddChannel(Session session, Codec2 codec, URL url, ChannelHandler handler) {
 		if (session == null) {
 			return null;
 		}
-		NimbleioChannel ret = (NimbleioChannel) session
-				.getAttribute(CHANNEL_KEY);
+		NimbleioChannel ret = (NimbleioChannel) session.getAttribute(CHANNEL_KEY);
 		if (ret == null) {
 			synchronized (session) {
 
@@ -51,12 +46,16 @@ public class NimbleioChannel extends AbstractChannel {
 		}
 		return ret;
 	}
-	
+
 	public void send(Object message, boolean sent) throws RemotingException {
 		super.send(message, sent);
-		
-		DubboReadFuture future = new DubboReadFuture(session, message,codec ,getUrl(),getChannelHandler());
-		
+
+		if (message == null) {
+			throw new IllegalArgumentException("empty message");
+		}
+
+		DubboReadFuture future = new DubboReadFuture(session, message, codec, getUrl(), getChannelHandler());
+
 		try {
 			session.flush(future);
 		} catch (IOException e) {
@@ -64,7 +63,7 @@ public class NimbleioChannel extends AbstractChannel {
 		}
 	}
 
-	private Session session;
+	private Session	session;
 
 	public InetSocketAddress getRemoteAddress() {
 		return session.getRemoteSocketAddress();
@@ -93,11 +92,11 @@ public class NimbleioChannel extends AbstractChannel {
 	public InetSocketAddress getLocalAddress() {
 		return session.getLocalSocketAddress();
 	}
-	
-    static void removeChannelIfDisconnectd(Session session) {
-        if (session != null && ! session.isOpened()) {
-            session.removeAttribute(CHANNEL_KEY);
-        }
-    }
+
+	static void removeChannelIfDisconnectd(Session session) {
+		if (session != null && !session.isOpened()) {
+			session.removeAttribute(CHANNEL_KEY);
+		}
+	}
 
 }

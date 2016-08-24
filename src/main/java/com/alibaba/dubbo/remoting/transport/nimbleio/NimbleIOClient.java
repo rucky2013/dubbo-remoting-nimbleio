@@ -25,7 +25,7 @@ import com.alibaba.dubbo.remoting.Channel;
 import com.alibaba.dubbo.remoting.ChannelHandler;
 import com.alibaba.dubbo.remoting.RemotingException;
 import com.alibaba.dubbo.remoting.transport.AbstractClient;
-import com.gifisan.nio.acceptor.TCPAcceptor;
+import com.gifisan.nio.common.CloseUtil;
 import com.gifisan.nio.component.DefaultNIOContext;
 import com.gifisan.nio.component.NIOContext;
 import com.gifisan.nio.component.Session;
@@ -40,19 +40,17 @@ import com.gifisan.nio.extend.configuration.ServerConfiguration;
  */
 public class NimbleIOClient extends AbstractClient {
 
-	private static final Logger logger = LoggerFactory
-			.getLogger(NimbleIOClient.class);
+	private static Logger					logger		= LoggerFactory.getLogger(NimbleIOClient.class);
 
-	private static final Map<String, TCPConnector> connectors = new ConcurrentHashMap<String, TCPConnector>();
+	private static Map<String, TCPConnector>	connectors	= new ConcurrentHashMap<String, TCPConnector>();
 
-	private String connectorKey;
+	private String							connectorKey;
 
-	private TCPConnector connector;
+	private TCPConnector					connector;
 
-	private volatile Session session; // volatile, please copy reference to use
-
-	public NimbleIOClient(final URL url, final ChannelHandler handler)
-			throws RemotingException {
+	private Session						session;												// volatile,
+																							// please
+	public NimbleIOClient(final URL url, final ChannelHandler handler) throws RemotingException {
 		super(url, wrapChannelHandler(url, handler));
 	}
 
@@ -63,21 +61,20 @@ public class NimbleIOClient extends AbstractClient {
 		if (c != null) {
 			connector = c;
 		} else {
-	    	NIOContext context = new DefaultNIOContext();
-	        connector = new TCPConnector();
-	        connector.setContext(context);
+			NIOContext context = new DefaultNIOContext();
+			connector = new TCPConnector();
+			connector.setContext(context);
 
 			ServerConfiguration cfg = new ServerConfiguration();
-			
+
 			cfg.setSERVER_HOST(getRemoteAddress().getHostName());
 			cfg.setSERVER_TCP_PORT(getRemoteAddress().getPort());
 
-			context.setProtocolFactory(new NimbleIOCodecAdapter(getCodec(),
-					getUrl(), this));
-			
+			context.setProtocolFactory(new NimbleIOCodecAdapter(getCodec(), getUrl(), this));
+
 			context.setServerConfiguration(cfg);
-			
-			context.setIOEventHandleAdaptor(new NimbleIOHandler(getCodec(),getUrl(), this));
+
+			context.setIOEventHandleAdaptor(new NimbleIOHandler(getCodec(), getUrl(), this));
 
 			connectors.put(connectorKey, connector);
 		}
@@ -87,7 +84,7 @@ public class NimbleIOClient extends AbstractClient {
 	protected void doConnect() throws Throwable {
 
 		connector.connect();
-		
+
 		session = connector.getSession();
 	}
 
@@ -102,7 +99,7 @@ public class NimbleIOClient extends AbstractClient {
 
 	@Override
 	protected void doClose() throws Throwable {
-		// release mina resouces.
+		CloseUtil.close(connector);
 	}
 
 	@Override
@@ -110,7 +107,7 @@ public class NimbleIOClient extends AbstractClient {
 		Session s = session;
 		if (s == null || !s.isOpened())
 			return null;
-		return NimbleioChannel.getOrAddChannel(s,getCodec(), getUrl(), this);
+		return NimbleioChannel.getOrAddChannel(s, getCodec(), getUrl(), this);
 	}
 
 }

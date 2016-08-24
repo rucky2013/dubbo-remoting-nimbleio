@@ -40,15 +40,15 @@ import com.gifisan.nio.component.protocol.future.TextWriteFuture;
  */
 final class NimbleIOCodecAdapter implements ProtocolFactory {
 
-	private final ProtocolEncoder encoder = new InternalEncoder();
+	private final ProtocolEncoder	encoder	= new InternalEncoder();
 
-	private final ProtocolDecoder decoder = new InternalDecoder();
+	private final ProtocolDecoder	decoder	= new InternalDecoder();
 
-	private final Codec2 codec;
+	private final Codec2		codec;
 
-	private final URL url;
+	private final URL			url;
 
-	private final ChannelHandler handler;
+	private final ChannelHandler	handler;
 
 	public NimbleIOCodecAdapter(Codec2 codec, URL url, ChannelHandler handler) {
 		this.codec = codec;
@@ -66,42 +66,43 @@ final class NimbleIOCodecAdapter implements ProtocolFactory {
 
 	private class InternalEncoder implements ProtocolEncoder {
 
-		public IOWriteFuture encode(TCPEndPoint arg0, ReadFuture arg1)
-				throws IOException {
-			DubboReadFuture f = (DubboReadFuture) arg1;
+		public IOWriteFuture encode(TCPEndPoint endPoint, ReadFuture future) throws IOException {
 			
-			ChannelBuffer buffer = ChannelBuffers.dynamicBuffer(1024);
-			NimbleioChannel channel = NimbleioChannel.getOrAddChannel(
-					arg0.getSession(), codec, url, handler);
-			try {
-				codec.encode(channel, buffer, f.getMsg());
-			} finally {
-				NimbleioChannel.removeChannelIfDisconnectd(arg0.getSession());
-			}
-			
-			ByteBuffer buffer2 = buffer.toByteBuffer();
-			
-			return new TextWriteFuture(arg0, arg1, buffer2);
-		}
+			DubboReadFuture f = (DubboReadFuture) future;
 
+			ChannelBuffer buffer = ChannelBuffers.dynamicBuffer(1024);
+			
+			NimbleioChannel channel = NimbleioChannel.getOrAddChannel(endPoint.getSession(), codec, url, handler);
+			
+			try {
+				
+				codec.encode(channel, buffer, f.getMsg());
+			
+			} finally {
+				NimbleioChannel.removeChannelIfDisconnectd(endPoint.getSession());
+			}
+
+			ByteBuffer buffer2 = buffer.toByteBuffer();
+
+			return new TextWriteFuture(endPoint, future, buffer2);
+		}
 	}
 
 	private class InternalDecoder implements ProtocolDecoder {
 
-		public IOReadFuture decode(TCPEndPoint arg0) throws IOException {
+		public IOReadFuture decode(TCPEndPoint endPoint) throws IOException {
 
-			ByteBuffer buffer = ByteBuffer.allocate(1024 * 4);
+			ByteBuffer header = ByteBuffer.allocate(16);
 
-			int length = arg0.read(buffer);
+			int length = endPoint.read(header);
 
 			if (length < 1) {
 				if (length == -1) {
-					CloseUtil.close(arg0);
+					CloseUtil.close(endPoint);
 				}
 				return null;
 			}
-			return new DubboReadFuture(arg0.getSession(), buffer, codec, url,
-					handler);
+			return new DubboReadFuture(endPoint.getSession(), header, codec, url, handler);
 		}
 	}
 

@@ -26,15 +26,15 @@ import com.alibaba.dubbo.remoting.Transporter;
  * @author ding.lid
  */
 public class NimbleIOTransporter implements Transporter {
-    
-    public static final String NAME = " NimbleIO";
 
-    public Server bind(URL url, ChannelHandler handler) throws RemotingException {
-        return new NimbleIOServer(url, handler);
-    }
+	public static final String	NAME	= " NimbleIO";
 
-    public Client connect(URL url, ChannelHandler handler) throws RemotingException {
-        return new NimbleIOClient(url, handler);
-    }
+	public Server bind(URL url, ChannelHandler handler) throws RemotingException {
+		return new NimbleIOServer(url, handler);
+	}
+
+	public Client connect(URL url, ChannelHandler handler) throws RemotingException {
+		return new NimbleIOClient(url, handler);
+	}
 
 }

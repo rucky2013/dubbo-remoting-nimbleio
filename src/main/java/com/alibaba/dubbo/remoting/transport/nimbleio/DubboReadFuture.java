@@ -9,34 +9,40 @@ import com.alibaba.dubbo.remoting.ChannelHandler;
 import com.alibaba.dubbo.remoting.Codec2;
 import com.alibaba.dubbo.remoting.buffer.ChannelBuffer;
 import com.alibaba.dubbo.remoting.buffer.ChannelBuffers;
+import com.gifisan.nio.common.MathUtil;
 import com.gifisan.nio.component.Session;
 import com.gifisan.nio.component.protocol.future.AbstractIOReadFuture;
 
 public class DubboReadFuture extends AbstractIOReadFuture {
 
-	private Object msg;
+	private Object				msg;
 
-	private ByteBuffer buffer;
+	private ByteBuffer			buffer;
 
-	private final Codec2 codec;
+	private boolean			headerComplete;
 
-	private final URL url;
+	private boolean			bodyComplete;
 
-	private final ChannelHandler handler;
+	private final Codec2		codec;
 
-	public DubboReadFuture(Session session, ByteBuffer cache, Codec2 codec,
-			URL url, ChannelHandler handler) {
+	private final URL			url;
+
+	private final ChannelHandler	handler;
+
+	public DubboReadFuture(Session session, ByteBuffer header, Codec2 codec, URL url, ChannelHandler handler)
+			throws IOException {
 		super(session);
-		this.buffer = cache;
+		this.buffer = header;
 		this.url = url;
 		this.codec = codec;
 		this.handler = handler;
-	}
-	
-	
 
-	public DubboReadFuture(Session session, Object msg, Codec2 codec, URL url,
-			ChannelHandler handler) {
+		if (!header.hasRemaining()) {
+			doHeaderComplete(header);
+		}
+	}
+
+	public DubboReadFuture(Session session, Object msg, Codec2 codec, URL url, ChannelHandler handler) {
 		super(session);
 		this.msg = msg;
 		this.codec = codec;
@@ -44,56 +50,75 @@ public class DubboReadFuture extends AbstractIOReadFuture {
 		this.handler = handler;
 	}
 
+	private void doHeaderComplete(ByteBuffer header) throws IOException {
 
+		int bodyLength = MathUtil.byte2Int(header.array(), 12);
 
-	public boolean read() throws IOException {
-		
-		endPoint.read(buffer);
-		
-		buffer.flip();
-		
-		ChannelBuffer frame = ChannelBuffers.wrappedBuffer(buffer);
-
-		Channel channel = NimbleioChannel.getOrAddChannel(session,codec, url, handler);
-		Object msg;
-		int savedReadIndex;
-
-		try {
-			do {
-				savedReadIndex = frame.readerIndex();
-				msg = codec.decode(channel, frame);
-				if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
-					frame.readerIndex(savedReadIndex);
-					break;
-				} else {
-					if (savedReadIndex == frame.readerIndex()) {
-						throw new IOException("Decode without read data.");
-					}
-					if (msg != null) {
-						this.msg = msg;
-
-						return true;
-					}
-				}
-			} while (frame.readable());
-		} finally {
-			if (frame.readable()) {
-				frame.discardReadBytes();
-			} else {
-			}
-			NimbleioChannel.removeChannelIfDisconnectd(session);
+		if (bodyLength > 1024 * 1024) {
+			throw new IOException("max length 1M,length " + bodyLength);
 		}
 
-		return false;
+		buffer = ByteBuffer.allocate(bodyLength + 16);
+
+		buffer.put(header.array());
+
+		headerComplete = true;
+	}
+
+	private void doBodyComplete(ByteBuffer buffer) throws IOException {
+
+		buffer.flip();
+
+		ChannelBuffer frame = ChannelBuffers.wrappedBuffer(buffer);
+
+		Channel channel = NimbleioChannel.getOrAddChannel(session, codec, url, handler);
+
+		Object msg = codec.decode(channel, frame);
+
+		if (msg == Codec2.DecodeResult.NEED_MORE_INPUT) {
+			throw new IOException("system exception");
+		} else {
+			if (msg == null) {
+				throw new IOException("system exception");
+			}
+			this.msg = msg;
+		}
+
+		bodyComplete = true;
+	}
+
+	public boolean read() throws IOException {
+
+		if (!headerComplete) {
+
+			endPoint.read(buffer);
+
+			if (!buffer.hasRemaining()) {
+				doBodyComplete(buffer);
+			}
+		}
+
+		ByteBuffer buffer = this.buffer;
+
+		if (!bodyComplete) {
+
+			endPoint.read(buffer);
+
+			if (!buffer.hasRemaining()) {
+
+				doBodyComplete(buffer);
+			}
+		}
+
+		return true;
 	}
 
 	public String getServiceName() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	public Object getMsg() {
 		return msg;
 	}
-	
+
 }
