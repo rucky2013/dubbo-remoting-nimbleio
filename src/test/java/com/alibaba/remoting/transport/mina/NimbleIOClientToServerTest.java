@@ -29,26 +29,26 @@ import com.alibaba.dubbo.remoting.exchange.support.Replier;
  */
 public class NimbleIOClientToServerTest extends ClientToServerTest {
 
-    @Override
-    protected ExchangeServer newServer(int port, Replier<?> receiver) throws RemotingException {
-        return Exchangers.bind(URL.valueOf("exchange://localhost:" + port + "?server=NimbleIO"), receiver);
-    }
+	@Override
+	protected ExchangeServer newServer(int port, Replier<?> receiver) throws RemotingException {
+		return Exchangers.bind(URL.valueOf("exchange://localhost:" + port + "?server=NimbleIO"), receiver);
+	}
 
-    @Override
-    protected ExchangeChannel newClient(int port) throws RemotingException {
-        return Exchangers.connect(URL.valueOf("exchange://localhost:" + port + "?client=NimbleIO"));
-    }
-    
-    public static void main(String[] args) throws Exception {
-		
-    	NimbleIOClientToServerTest t = new NimbleIOClientToServerTest() ;
-    	
-    	t.setUp();
-    	
-    	t.testFuture();
-    	
-    	t.tearDown();
-    	
+	@Override
+	protected ExchangeChannel newClient(int port) throws RemotingException {
+		return Exchangers.connect(URL.valueOf("exchange://localhost:" + port + "?client=NimbleIO"));
+	}
+
+	public static void main(String[] args) throws Exception {
+
+		NimbleIOClientToServerTest t = new NimbleIOClientToServerTest();
+
+		t.setUp();
+
+		t.testFuture();
+
+		t.tearDown();
+
 	}
 
 }

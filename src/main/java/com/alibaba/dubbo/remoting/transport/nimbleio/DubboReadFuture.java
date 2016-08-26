@@ -11,7 +11,7 @@ import com.alibaba.dubbo.remoting.buffer.ChannelBuffer;
 import com.alibaba.dubbo.remoting.buffer.ChannelBuffers;
 import com.gifisan.nio.common.MathUtil;
 import com.gifisan.nio.component.Session;
-import com.gifisan.nio.component.protocol.future.AbstractIOReadFuture;
+import com.gifisan.nio.component.protocol.AbstractIOReadFuture;
 
 public class DubboReadFuture extends AbstractIOReadFuture {
 

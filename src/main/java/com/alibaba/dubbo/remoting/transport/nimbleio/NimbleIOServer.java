@@ -90,7 +90,7 @@ public class NimbleIOServer extends AbstractServer {
 	}
 
 	public boolean isBound() {
-		throw new UnsupportedOperationException("use a other way");
+		return acceptor.isActive();
 	}
 	
 	public void triggerEvent(SessionMEvent event){

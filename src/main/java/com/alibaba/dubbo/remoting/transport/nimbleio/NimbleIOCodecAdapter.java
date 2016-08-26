@@ -25,13 +25,12 @@ import com.alibaba.dubbo.remoting.buffer.ChannelBuffer;
 import com.alibaba.dubbo.remoting.buffer.ChannelBuffers;
 import com.gifisan.nio.common.CloseUtil;
 import com.gifisan.nio.component.TCPEndPoint;
+import com.gifisan.nio.component.protocol.IOReadFuture;
+import com.gifisan.nio.component.protocol.IOWriteFuture;
 import com.gifisan.nio.component.protocol.ProtocolDecoder;
 import com.gifisan.nio.component.protocol.ProtocolEncoder;
 import com.gifisan.nio.component.protocol.ProtocolFactory;
-import com.gifisan.nio.component.protocol.future.IOReadFuture;
-import com.gifisan.nio.component.protocol.future.IOWriteFuture;
-import com.gifisan.nio.component.protocol.future.ReadFuture;
-import com.gifisan.nio.component.protocol.future.TextWriteFuture;
+import com.gifisan.nio.component.protocol.TextWriteFuture;
 
 /**
  * MinaCodecAdapter.
@@ -66,7 +65,7 @@ final class NimbleIOCodecAdapter implements ProtocolFactory {
 
 	private class InternalEncoder implements ProtocolEncoder {
 
-		public IOWriteFuture encode(TCPEndPoint endPoint, ReadFuture future) throws IOException {
+		public IOWriteFuture encode(TCPEndPoint endPoint, IOReadFuture future) throws IOException {
 			
 			DubboReadFuture f = (DubboReadFuture) future;
 
